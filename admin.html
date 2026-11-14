@@ -9,7 +9,7 @@ button{cursor:pointer;background:var(--g);color:#fff;border:0}button.r{backgroun
 <div class="bar"><input id="q" placeholder="Search name, email, code, branch"><select id="st"><option value="">All statuses</option><option>AWAITING_PROOF</option><option>PAID</option><option>REJECTED</option></select><button id="ex">Export CSV</button></div>
 <div class="tw"><table><thead><tr><th>Code</th><th>Name</th><th>Phone</th><th>Ministry / branch</th><th>Status</th><th>Received</th><th>Registered</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>
 <script>
-const SUPABASE_URL="",SUPABASE_ANON_KEY="";   // fill in (anon key is public by design)
+const SUPABASE_URL="https://yahsebysqdmjwcgtzqyx.supabase.co",SUPABASE_ANON_KEY="sb_publishable_Ly7MxhfDYuP34iRy6ax5_Q_mOj0ld4V";   // fill in (anon key is public by design)
 let tok="",rows=[];const $=i=>document.getElementById(i);
 const api=(p,o={})=>fetch(p,{...o,headers:{...(o.headers||{}),Authorization:"Bearer "+tok,"Content-Type":"application/json"}}).then(r=>r.json());
 $("go").onclick=async()=>{const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("em").value,password:$("pw").value})});
