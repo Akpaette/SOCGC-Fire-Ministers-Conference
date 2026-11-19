@@ -2,5 +2,5 @@
 window.MFC = {
   SUPABASE_URL: "https://yahsebysqdmjwcgtzqyx.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_Ly7MxhfDYuP34iRy6ax5_Q_mOj0ldQ4V",
-  API: "https://YOUR-PROJECT-REF.supabase.co/functions/v1/api"
+  API: "https://yahsebysqdmjwcgtzqyx.supabase.co/functions/v1/api"
 };
