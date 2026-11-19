@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MFC Admin: Payments</title>
+<style>:root{--bg:#fbf6ea;--c:#fff;--ink:#1d1a17;--l:#e6dcc6;--g:#b8860b}@media(prefers-color-scheme:dark){:root{--bg:#12110f;--c:#1d1b18;--ink:#f4ede0;--l:#35302a;--g:#e0b04a}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px Georgia,serif;padding:16px}input,select,button{font:15px Georgia,serif;padding:10px;border:1px solid var(--l);border-radius:8px;background:var(--c);color:var(--ink)}
+button{cursor:pointer;background:var(--g);color:#fff;border:0}button.r{background:#a4161a}#login{max-width:340px;margin:12vh auto;display:grid;gap:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.cd{background:var(--c);border:1px solid var(--l);border-left:4px solid var(--g);border-radius:10px;padding:10px}.cd b{font-size:22px;display:block}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:820px}th,td{border-bottom:1px solid var(--l);padding:8px;text-align:left;font-size:14px}.PAID{color:#16a34a}.AWAITING_PROOF{color:#b8860b}.REJECTED{color:#dc2626}</style></head><body>
+<div id="login"><h2>Admin sign in</h2><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Password"><button id="go">Sign in</button><p id="le"></p></div>
+<div id="app" hidden><h2>Minister’s Fire Conference: Payments</h2><div class="cards" id="cards"></div>
+<div class="bar"><input id="q" placeholder="Search name, email, code, branch"><select id="st"><option value="">All statuses</option><option>AWAITING_PROOF</option><option>PAID</option><option>REJECTED</option></select><button id="ex">Export CSV</button></div>
+<div class="tw"><table><thead><tr><th>Code</th><th>Name</th><th>Phone</th><th>Ministry / branch</th><th>Status</th><th>Received</th><th>Registered</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>
+<script src="config.js"></script>
+<script>
+const {SUPABASE_URL,SUPABASE_ANON_KEY,API}=window.MFC||{};
+let tok="",rows=[];const $=i=>document.getElementById(i);
+const api=(p,o={})=>fetch(API+p,{...o,headers:{...(o.headers||{}),Authorization:"Bearer "+tok,"Content-Type":"application/json"}}).then(r=>r.json());
+$("go").onclick=async()=>{const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("em").value,password:$("pw").value})});
+const d=await r.json();if(!d.access_token){$("le").textContent="Sign-in failed.";return}tok=d.access_token;$("login").hidden=true;$("app").hidden=false;load()};
+async function load(){const d=await api("/admin/payments");if(d.error){alert(d.error);return}rows=d.rows;render()}
+const td=(t,c)=>{const e=document.createElement("td");e.textContent=t??"";if(c)e.className=c;return e};
+function render(){const q=$("q").value.toLowerCase(),st=$("st").value;
+const paid=rows.filter(r=>r.payment_status==="PAID"),aw=rows.filter(r=>r.payment_status==="AWAITING_PROOF");
+const sum=a=>a.reduce((n,r)=>n+(r.amount_received||0),0),exp=aw.reduce((n,r)=>n+r.fee_ngn,0);
+$("cards").innerHTML="";[["Registrations",rows.length],["Paid",paid.length],["Awaiting",aw.length],["Rejected",rows.filter(r=>r.payment_status==="REJECTED").length],["Confirmed revenue","₦"+sum(paid).toLocaleString()],["Outstanding","₦"+exp.toLocaleString()]].forEach(([k,v])=>{const d=document.createElement("div");d.className="cd";d.append(k);const b=document.createElement("b");b.textContent=v;d.append(b);$("cards").append(d)});
+$("tb").innerHTML="";rows.filter(r=>(!st||r.payment_status===st)&&(!q||[r.full_name,r.email,r.reference,r.branch_name].join(" ").toLowerCase().includes(q))).forEach(r=>{
+const tr=document.createElement("tr");tr.append(td(r.reference),td(r.full_name),td(r.phone),td(r.ministry_type==="SOCGC"?"SOCGC: "+r.branch_name+", "+r.branch_address:r.church_affiliation||""),td(r.payment_status,r.payment_status),td(r.amount_received?"₦"+r.amount_received.toLocaleString():""),td(new Date(r.created_at).toLocaleDateString()));
+const a=document.createElement("td");if(r.payment_status!=="PAID"){const ok=document.createElement("button");ok.textContent="Approve";ok.onclick=async()=>{const amt=prompt("Amount received (NGN)",r.fee_ngn);if(amt===null)return;const bank=prompt("Bank reference or sender name (optional)")||null;const x=await api("/admin/approve",{method:"POST",body:JSON.stringify({reference:r.reference,action:"approve",amount_received:parseInt(amt,10),bank_reference:bank})});if(x.error)alert(x.error);load()};
+const no=document.createElement("button");no.textContent="Reject";no.className="r";no.onclick=async()=>{const n=prompt("Reason");if(n===null)return;await api("/admin/approve",{method:"POST",body:JSON.stringify({reference:r.reference,action:"reject",note:n})});load()};a.append(ok," ",no)}tr.append(a);$("tb").append(tr)})}
+$("q").oninput=$("st").onchange=render;
+$("ex").onclick=()=>{const h=["reference","full_name","email","phone","state","city","ministry_type","church_affiliation","branch_name","branch_address","payment_status","amount_received","bank_reference","approved_at","created_at"];
+const e=v=>{v=v==null?"":String(v);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+const csv=[h.join(",")].concat(rows.map(r=>h.map(k=>e(r[k])).join(","))).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="mfc-registrations.csv";a.click()};
+</script></body></html>

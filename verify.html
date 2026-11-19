@@ -1,0 +1,5 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verify registration</title>
+<style>body{font:18px Georgia,serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#12110f;color:#f4ede0;text-align:center}div{padding:24px}h1{font-size:30px}.PAID{color:#4ade80}.AWAITING_PAYMENT{color:#e0b04a}.INVALID,.CANCELLED{color:#f87171}</style></head><body><div><p>Minister’s Fire Conference 2026</p><h1 id="s">Checking…</h1><p id="r"></p></div>
+<script src="config.js"></script><script>const ref=new URLSearchParams(location.search).get("ref")||"";document.getElementById("r").textContent=ref;
+const L={PAID:"Payment verified",AWAITING_PAYMENT:"Awaiting payment confirmation",INVALID:"Not recognised",CANCELLED:"Registration cancelled"};
+fetch(((window.MFC||{}).API||"")+"/verify?ref="+encodeURIComponent(ref)).then(r=>r.json()).then(d=>{const h=document.getElementById("s");h.textContent=L[d.status]||"Not recognised";h.className=d.status}).catch(()=>{document.getElementById("s").textContent="Could not check. Try again."});</script></body></html>
